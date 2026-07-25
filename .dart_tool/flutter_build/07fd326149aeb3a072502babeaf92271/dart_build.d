@@ -1,0 +1,1 @@
+ /Users/gabrielagonzalez/AndroidStudioProjects/Homesick/.dart_tool/flutter_build/07fd326149aeb3a072502babeaf92271/dart_build_result.json:  /Users/gabrielagonzalez/AndroidStudioProjects/Homesick/.dart_tool/package_config.json /Users/gabrielagonzalez/AndroidStudioProjects/Homesick/pubspec.yaml /opt/homebrew/share/flutter/bin/cache/dart-sdk/version

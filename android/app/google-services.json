@@ -1,0 +1,54 @@
+{
+  "project_info": {
+    "project_number": "131130676443",
+    "project_id": "homesick-47606",
+    "storage_bucket": "homesick-47606.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:131130676443:android:96f07c2a173ab29e2028fe",
+        "android_client_info": {
+          "package_name": "com.gabrielagonzalez.homesick"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "131130676443-36bp96tsvllf5o20d580mf31qfouoi95.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.gabrielagonzalez.homesick",
+            "certificate_hash": "749250b53524675ac0dc5b607df8d8e7402400fc"
+          }
+        },
+        {
+          "client_id": "131130676443-plv5bgjpk3fsgv706d920eur1b5jlqpe.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyD_hJH0R93LCrv3ZzXM2zIz-ZIGx7ESXpk"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "131130676443-plv5bgjpk3fsgv706d920eur1b5jlqpe.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "131130676443-k1ugpdk5ufl6l4hmg324dt9rinsbeor1.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.gabrielagonzalez.homesick"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

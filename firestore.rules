@@ -1,0 +1,75 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return signedIn() && request.auth.uid == userId;
+    }
+
+    match /users/{userId} {
+      allow create: if isOwner(userId);
+      allow read: if signedIn();
+      allow update, delete: if isOwner(userId);
+
+      match /people/{personId} {
+        allow read, write: if isOwner(userId);
+      }
+
+      match /letters/{letterId} {
+        allow read, write: if isOwner(userId);
+      }
+
+      match /timeCapsules/{capsuleId} {
+        allow read, write: if isOwner(userId);
+      }
+    }
+
+    match /connectionInvitations/{invitationId} {
+      allow create: if signedIn()
+        && request.resource.data.senderUid == request.auth.uid;
+
+      allow read: if signedIn()
+        && (
+          resource.data.senderUid == request.auth.uid
+          || resource.data.recipientUid == request.auth.uid
+          || resource.data.recipientEmail == request.auth.token.email
+        );
+
+      allow update: if signedIn()
+        && (
+          resource.data.senderUid == request.auth.uid
+          || resource.data.recipientUid == request.auth.uid
+          || resource.data.recipientEmail == request.auth.token.email
+        );
+
+      allow delete: if signedIn()
+        && resource.data.senderUid == request.auth.uid;
+    }
+
+    match /sharedLetters/{letterId} {
+      allow create: if signedIn()
+        && request.resource.data.senderUid == request.auth.uid
+        && request.resource.data.recipientUid is string
+        && request.resource.data.recipientUid.size() > 0;
+
+      allow read: if signedIn()
+        && (
+          resource.data.senderUid == request.auth.uid
+          || resource.data.recipientUid == request.auth.uid
+        );
+
+      allow update: if signedIn()
+        && (
+          resource.data.senderUid == request.auth.uid
+          || resource.data.recipientUid == request.auth.uid
+        );
+
+      allow delete: if signedIn()
+        && resource.data.senderUid == request.auth.uid;
+    }
+  }
+}

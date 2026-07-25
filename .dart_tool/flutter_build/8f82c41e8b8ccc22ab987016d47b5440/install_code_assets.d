@@ -1,0 +1,1 @@
+ /Users/gabrielagonzalez/AndroidStudioProjects/Homesick/.dart_tool/flutter_build/8f82c41e8b8ccc22ab987016d47b5440/native_assets.json: 
