@@ -1,0 +1,56 @@
+rules_version = '2';
+
+service firebase.storage {
+  match /b/{bucket}/o {
+
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return signedIn() && request.auth.uid == userId;
+    }
+
+    function isAllowedImage() {
+      return request.resource != null
+        && request.resource.contentType is string
+        && request.resource.contentType.matches('image/.*');
+    }
+
+    function isWithinSizeLimit() {
+      // Maximum 10 MB per uploaded image.
+      return request.resource != null
+        && request.resource.size < 10 * 1024 * 1024;
+    }
+
+    /*
+     * Matches the path used by PhotoStorageService:
+     * users/{uid}/letters/{letterId}/{filename}
+     */
+    match /users/{userId}/letters/{letterId}/{fileName} {
+      allow read: if isOwner(userId);
+
+      allow create, update: if isOwner(userId)
+        && isAllowedImage()
+        && isWithinSizeLimit();
+
+      allow delete: if isOwner(userId);
+    }
+
+    // Reserved for a future user-owned profile image.
+    match /users/{userId}/profile/{fileName} {
+      allow read: if isOwner(userId);
+
+      allow create, update: if isOwner(userId)
+        && isAllowedImage()
+        && isWithinSizeLimit();
+
+      allow delete: if isOwner(userId);
+    }
+
+    // Deny every Storage path that is not explicitly listed above.
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}

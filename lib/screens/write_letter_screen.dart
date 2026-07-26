@@ -636,7 +636,13 @@ class _WriteLetterScreenState extends State<WriteLetterScreen> {
             : 'Your draft for ${person.name} was saved.',
       );
       Navigator.pop(context, true);
-    } catch (_) {
+    } catch (error, stackTrace) {
+      debugPrint('SAVE DRAFT ERROR: $error');
+      debugPrintStack(
+        label: 'SAVE DRAFT STACK TRACE',
+        stackTrace: stackTrace,
+      );
+
       if (!mounted) {
         return;
       }
@@ -645,7 +651,7 @@ class _WriteLetterScreenState extends State<WriteLetterScreen> {
         _isSaving = false;
       });
 
-      _showMessage('We could not save your draft or upload its photos.');
+      _showMessage('Save failed: $error');
     }
   }
 
@@ -801,7 +807,13 @@ class _WriteLetterScreenState extends State<WriteLetterScreen> {
       );
 
       Navigator.pop(context, true);
-    } catch (_) {
+    } catch (error, stackTrace) {
+      debugPrint('SEAL LETTER ERROR: $error');
+      debugPrintStack(
+        label: 'SEAL LETTER STACK TRACE',
+        stackTrace: stackTrace,
+      );
+
       if (!mounted) {
         return;
       }
@@ -810,7 +822,7 @@ class _WriteLetterScreenState extends State<WriteLetterScreen> {
         _isSaving = false;
       });
 
-      _showMessage('We could not save your letter or upload its photos.');
+      _showMessage('Save failed: $error');
     }
   }
 

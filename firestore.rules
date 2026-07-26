@@ -2,6 +2,7 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
+
     function signedIn() {
       return request.auth != null;
     }
@@ -10,66 +11,103 @@ service cloud.firestore {
       return signedIn() && request.auth.uid == userId;
     }
 
+    function authEmail() {
+      return signedIn() && request.auth.token.email is string
+        ? request.auth.token.email
+        : '';
+    }
+
+    function invitationParticipant() {
+      return signedIn()
+        && (
+          resource.data.senderUid == request.auth.uid
+          || resource.data.recipientUid == request.auth.uid
+          || resource.data.recipientEmail == authEmail()
+        );
+    }
+
+    function sharedLetterParticipant() {
+      return signedIn()
+        && (
+          resource.data.senderUid == request.auth.uid
+          || resource.data.recipientUid == request.auth.uid
+        );
+    }
+
+    // User profiles and their private subcollections.
     match /users/{userId} {
-      allow create: if isOwner(userId);
+      allow create: if isOwner(userId)
+        && request.resource.data.uid == request.auth.uid;
+
+      /*
+       * Homesick currently searches /users by emailNormalized when connecting
+       * people. That query requires authenticated users to read matching user
+       * profile documents. Do not store letters, private notes, or other
+       * sensitive content directly in the profile document.
+       */
       allow read: if signedIn();
-      allow update, delete: if isOwner(userId);
+
+      allow update: if isOwner(userId)
+        && request.resource.data.uid == resource.data.uid;
+
+      allow delete: if isOwner(userId);
 
       match /people/{personId} {
-        allow read, write: if isOwner(userId);
+        allow read, create, update, delete: if isOwner(userId);
       }
 
       match /letters/{letterId} {
-        allow read, write: if isOwner(userId);
+        allow read, create, update, delete: if isOwner(userId);
       }
 
       match /timeCapsules/{capsuleId} {
-        allow read, write: if isOwner(userId);
+        allow read, create, update, delete: if isOwner(userId);
       }
     }
 
+    // Connection invitations between two Homesick users.
     match /connectionInvitations/{invitationId} {
       allow create: if signedIn()
-        && request.resource.data.senderUid == request.auth.uid;
+        && request.resource.data.senderUid == request.auth.uid
+        && request.resource.data.recipientEmail is string
+        && request.resource.data.recipientEmail.size() > 0
+        && request.resource.data.status == 'pending';
 
-      allow read: if signedIn()
-        && (
-          resource.data.senderUid == request.auth.uid
-          || resource.data.recipientUid == request.auth.uid
-          || resource.data.recipientEmail == request.auth.token.email
-        );
+      allow read: if invitationParticipant();
 
-      allow update: if signedIn()
-        && (
-          resource.data.senderUid == request.auth.uid
-          || resource.data.recipientUid == request.auth.uid
-          || resource.data.recipientEmail == request.auth.token.email
-        );
+      allow update: if invitationParticipant()
+        // The sender identity and destination email cannot be replaced.
+        && request.resource.data.senderUid == resource.data.senderUid
+        && request.resource.data.senderEmail == resource.data.senderEmail
+        && request.resource.data.recipientEmail == resource.data.recipientEmail
+        && request.resource.data.personId == resource.data.personId;
 
       allow delete: if signedIn()
         && resource.data.senderUid == request.auth.uid;
     }
 
+    // Delivered/shared letters visible only to sender and recipient.
     match /sharedLetters/{letterId} {
       allow create: if signedIn()
         && request.resource.data.senderUid == request.auth.uid
         && request.resource.data.recipientUid is string
-        && request.resource.data.recipientUid.size() > 0;
+        && request.resource.data.recipientUid.size() > 0
+        && request.resource.data.recipientUid != request.auth.uid;
 
-      allow read: if signedIn()
-        && (
-          resource.data.senderUid == request.auth.uid
-          || resource.data.recipientUid == request.auth.uid
-        );
+      allow read: if sharedLetterParticipant();
 
-      allow update: if signedIn()
-        && (
-          resource.data.senderUid == request.auth.uid
-          || resource.data.recipientUid == request.auth.uid
-        );
+      allow update: if sharedLetterParticipant()
+        // Participants cannot change who sent or received the letter.
+        && request.resource.data.senderUid == resource.data.senderUid
+        && request.resource.data.recipientUid == resource.data.recipientUid;
 
       allow delete: if signedIn()
         && resource.data.senderUid == request.auth.uid;
+    }
+
+    // Deny every Firestore path that is not explicitly listed above.
+    match /{document=**} {
+      allow read, write: if false;
     }
   }
 }
