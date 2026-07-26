@@ -41,3 +41,15 @@ bin/
 
 ### Mac OS ###
 .DS_Store
+
+# Flutter
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
+.pub/
+.pub-cache/
+build/
+
+# Firebase
+firebase-debug.log
