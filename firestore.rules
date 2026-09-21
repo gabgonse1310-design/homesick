@@ -34,6 +34,13 @@ service cloud.firestore {
         );
     }
 
+    function familyMember(circleId) {
+      return signedIn()
+        && request.auth.uid in get(
+          /databases/$(database)/documents/familyCircles/$(circleId)
+        ).data.memberUids;
+    }
+
     // User profiles and their private subcollections.
     match /users/{userId} {
       allow create: if isOwner(userId)
@@ -103,6 +110,29 @@ service cloud.firestore {
 
       allow delete: if signedIn()
         && resource.data.senderUid == request.auth.uid;
+    }
+
+    // Shared family spaces. Only listed members can see or contribute.
+    match /familyCircles/{circleId} {
+      allow create: if signedIn()
+        && request.resource.data.ownerUid == request.auth.uid
+        && request.auth.uid in request.resource.data.memberUids;
+
+      allow read: if signedIn()
+        && request.auth.uid in resource.data.memberUids;
+
+      allow update: if signedIn()
+        && resource.data.ownerUid == request.auth.uid
+        && request.resource.data.ownerUid == resource.data.ownerUid
+        && request.auth.uid in request.resource.data.memberUids;
+
+      allow delete: if signedIn()
+        && resource.data.ownerUid == request.auth.uid;
+
+      match /{familyCollection}/{itemId} {
+        allow read, create, update, delete: if familyMember(circleId)
+          && familyCollection in ['events', 'tasks', 'updates'];
+      }
     }
 
     // Deny every Firestore path that is not explicitly listed above.

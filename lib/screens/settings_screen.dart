@@ -1,6 +1,8 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
+import '../l10n/app_language.dart';
+import '../services/firestore_service.dart';
 import '../theme/app_theme.dart';
 import 'profile_screen.dart';
 
@@ -14,7 +16,10 @@ class SettingsScreen extends StatefulWidget {
 class _SettingsScreenState extends State<SettingsScreen> {
   final FirebaseAuth _auth = FirebaseAuth.instance;
 
-  String _selectedLanguage = 'English';
+  String get _selectedLanguage =>
+      AppLanguageController.instance.locale.languageCode == 'es'
+      ? 'Español'
+      : 'English';
   bool _letterNotifications = true;
   bool _scheduledDeliveryNotifications = true;
   bool _isWorking = false;
@@ -45,18 +50,18 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 ),
                 const SizedBox(height: 22),
                 Text(
-                  'Choose a language',
+                  context.familyText('chooseLanguage'),
                   style: Theme.of(context).textTheme.headlineMedium,
                 ),
                 const SizedBox(height: 18),
                 _LanguageOption(
-                  title: 'English',
+                  title: context.familyText('english'),
                   isSelected: _selectedLanguage == 'English',
                   onTap: () => Navigator.pop(context, 'English'),
                 ),
                 const SizedBox(height: 10),
                 _LanguageOption(
-                  title: 'Español',
+                  title: context.familyText('spanish'),
                   isSelected: _selectedLanguage == 'Español',
                   onTap: () => Navigator.pop(context, 'Español'),
                 ),
@@ -69,10 +74,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
     if (selectedLanguage == null || !mounted) return;
 
-    setState(() => _selectedLanguage = selectedLanguage);
-    _showMessage(
-      '$selectedLanguage selected. Full app translation will be connected with localization.',
+    final code = selectedLanguage == 'Español' ? 'es' : 'en';
+    await AppLanguageController.instance.setLanguage(code);
+    await FirestoreService.instance.updateCurrentUserProfile(
+      preferredLanguage: code,
     );
+    if (mounted) setState(() {});
   }
 
   Future<void> _sendVerificationEmail() async {
@@ -92,11 +99,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
     try {
       await user.sendEmailVerification();
       if (mounted) {
-        _showMessage('Verification email sent to ${user.email ?? 'your email'}.');
+        _showMessage(
+          'Verification email sent to ${user.email ?? 'your email'}.',
+        );
       }
     } on FirebaseAuthException catch (error) {
       if (mounted) {
-        _showMessage(error.message ?? 'We could not send the verification email.');
+        _showMessage(
+          error.message ?? 'We could not send the verification email.',
+        );
       }
     } finally {
       if (mounted) setState(() => _isWorking = false);
@@ -114,13 +125,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: AppColors.paper,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(24),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
         title: const Text('Reset password?'),
-        content: Text(
-          'We will send password reset instructions to $email.',
-        ),
+        content: Text('We will send password reset instructions to $email.'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
@@ -211,11 +218,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     try {
       await _auth.signOut();
       if (!mounted) return;
-      Navigator.pushNamedAndRemoveUntil(
-        context,
-        '/login',
-        (route) => false,
-      );
+      Navigator.pushNamedAndRemoveUntil(context, '/login', (route) => false);
     } on FirebaseAuthException catch (error) {
       if (mounted) {
         setState(() => _isWorking = false);
@@ -230,10 +233,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   void _showMessage(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        behavior: SnackBarBehavior.floating,
-      ),
+      SnackBar(content: Text(message), behavior: SnackBarBehavior.floating),
     );
   }
 
@@ -293,9 +293,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 const SizedBox(height: 8),
                 Text(
                   'Manage your account, letters and preferences.',
-                  style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                        color: AppColors.softGrey,
-                      ),
+                  style: Theme.of(context).textTheme.bodyLarge
+                      ?.copyWith(color: AppColors.softGrey),
                 ),
                 const SizedBox(height: 28),
                 const _SettingsSectionTitle(title: 'Your account'),
@@ -334,7 +333,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       subtitle: isVerified
                           ? email
                           : 'Send a verification link to $email',
-                      onTap: isVerified ? _refreshAccount : _sendVerificationEmail,
+                      onTap: isVerified
+                          ? _refreshAccount
+                          : _sendVerificationEmail,
                     ),
                     const _SettingsDivider(),
                     _SettingsTile(
@@ -353,7 +354,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     const _SettingsDivider(),
                     _SettingsTile(
                       icon: Icons.language_rounded,
-                      title: 'Language',
+                      title: context.familyText('language'),
                       subtitle: _selectedLanguage,
                       onTap: _chooseLanguage,
                     ),
@@ -371,457 +372,4 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       value: _letterNotifications,
                       onChanged: (value) {
                         setState(() => _letterNotifications = value);
-                      },
-                    ),
-                    const _SettingsDivider(),
-                    _SettingsSwitchTile(
-                      icon: Icons.schedule_outlined,
-                      title: 'Time capsule reminders',
-                      subtitle: 'Remind me when a capsule becomes available',
-                      value: _scheduledDeliveryNotifications,
-                      onChanged: (value) {
-                        setState(
-                          () => _scheduledDeliveryNotifications = value,
-                        );
-                      },
-                    ),
-                    const _SettingsDivider(),
-                    _SettingsTile(
-                      icon: Icons.inventory_2_outlined,
-                      title: 'Keepsakes',
-                      subtitle: 'Export or preserve your letters',
-                      onTap: () => _showComingSoon('Keepsake export'),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 28),
-                const _SettingsSectionTitle(title: 'Appearance'),
-                const SizedBox(height: 12),
-                const _SettingsCard(
-                  children: [
-                    _SettingsTile(
-                      icon: Icons.light_mode_outlined,
-                      title: 'Light theme',
-                      subtitle: 'Homesick’s current appearance',
-                      showChevron: false,
-                    ),
-                    _SettingsDivider(),
-                    _SettingsTile(
-                      icon: Icons.dark_mode_outlined,
-                      title: 'Dark mode',
-                      subtitle: 'Not included in Version 1.0',
-                      showChevron: false,
-                      isEnabled: false,
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 28),
-                const _SettingsSectionTitle(title: 'Privacy & support'),
-                const SizedBox(height: 12),
-                _SettingsCard(
-                  children: [
-                    _SettingsTile(
-                      icon: Icons.shield_outlined,
-                      title: 'Privacy Policy',
-                      subtitle: 'How your information is protected',
-                      onTap: () => _showComingSoon('Privacy Policy'),
-                    ),
-                    const _SettingsDivider(),
-                    _SettingsTile(
-                      icon: Icons.description_outlined,
-                      title: 'Terms of Service',
-                      subtitle: 'The terms for using Homesick',
-                      onTap: () => _showComingSoon('Terms of Service'),
-                    ),
-                    const _SettingsDivider(),
-                    _SettingsTile(
-                      icon: Icons.favorite_border_rounded,
-                      title: 'About Homesick',
-                      subtitle: 'Everlasting words',
-                      onTap: _showAboutHomesick,
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 30),
-                Container(
-                  padding: const EdgeInsets.all(22),
-                  decoration: BoxDecoration(
-                    color: AppColors.paper,
-                    borderRadius: BorderRadius.circular(24),
-                    border: Border.all(color: AppColors.border),
-                  ),
-                  child: Column(
-                    children: [
-                      const Icon(
-                        Icons.local_florist_outlined,
-                        color: AppColors.terracotta,
-                        size: 34,
-                      ),
-                      const SizedBox(height: 12),
-                      Text(
-                        'Homesick',
-                        style: Theme.of(context).textTheme.titleLarge,
-                      ),
-                      const SizedBox(height: 4),
-                      const Text('Everlasting words.'),
-                      const SizedBox(height: 2),
-                      Text(
-                        'Home is only a letter away.',
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                              color: AppColors.softGrey,
-                            ),
-                      ),
-                      const SizedBox(height: 10),
-                      Text(
-                        'Version 1.0.0',
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                              color: AppColors.softGrey,
-                            ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 22),
-                TextButton.icon(
-                  onPressed: _isWorking ? null : _confirmSignOut,
-                  icon: const Icon(Icons.logout_rounded),
-                  label: const Text('Sign Out'),
-                ),
-              ],
-            ),
-            if (_isWorking)
-              Positioned.fill(
-                child: ColoredBox(
-                  color: Colors.black12,
-                  child: Center(
-                    child: Container(
-                      padding: const EdgeInsets.all(20),
-                      decoration: BoxDecoration(
-                        color: AppColors.paper,
-                        borderRadius: BorderRadius.circular(18),
-                      ),
-                      child: const CircularProgressIndicator(),
-                    ),
-                  ),
-                ),
-              ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _AccountHeader extends StatelessWidget {
-  final String name;
-  final String email;
-  final bool isVerified;
-
-  const _AccountHeader({
-    required this.name,
-    required this.email,
-    required this.isVerified,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        color: AppColors.paper,
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: AppColors.border),
-      ),
-      child: Row(
-        children: [
-          CircleAvatar(
-            radius: 29,
-            backgroundColor: AppColors.cream,
-            child: Text(
-              name.isEmpty ? '?' : name[0].toUpperCase(),
-              style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                    color: AppColors.terracotta,
-                  ),
-            ),
-          ),
-          const SizedBox(width: 15),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(name, style: Theme.of(context).textTheme.titleLarge),
-                const SizedBox(height: 3),
-                Text(
-                  email,
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: AppColors.softGrey,
-                      ),
-                ),
-                const SizedBox(height: 7),
-                Row(
-                  children: [
-                    Icon(
-                      isVerified
-                          ? Icons.verified_rounded
-                          : Icons.info_outline_rounded,
-                      size: 17,
-                      color: isVerified
-                          ? AppColors.terracotta
-                          : AppColors.softGrey,
-                    ),
-                    const SizedBox(width: 6),
-                    Text(
-                      isVerified ? 'Verified account' : 'Email not verified',
-                      style: Theme.of(context).textTheme.bodySmall,
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _SettingsSectionTitle extends StatelessWidget {
-  final String title;
-
-  const _SettingsSectionTitle({required this.title});
-
-  @override
-  Widget build(BuildContext context) {
-    return Text(
-      title,
-      style: Theme.of(context).textTheme.titleMedium?.copyWith(
-            color: AppColors.softGrey,
-            fontWeight: FontWeight.w700,
-          ),
-    );
-  }
-}
-
-class _SettingsCard extends StatelessWidget {
-  final List<Widget> children;
-
-  const _SettingsCard({required this.children});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: AppColors.paper,
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: AppColors.border),
-      ),
-      child: Column(children: children),
-    );
-  }
-}
-
-class _SettingsDivider extends StatelessWidget {
-  const _SettingsDivider();
-
-  @override
-  Widget build(BuildContext context) {
-    return const Padding(
-      padding: EdgeInsets.only(left: 72),
-      child: Divider(height: 1, color: AppColors.border),
-    );
-  }
-}
-
-class _SettingsTile extends StatelessWidget {
-  final IconData icon;
-  final String title;
-  final String subtitle;
-  final VoidCallback? onTap;
-  final bool showChevron;
-  final bool isEnabled;
-
-  const _SettingsTile({
-    required this.icon,
-    required this.title,
-    required this.subtitle,
-    this.onTap,
-    this.showChevron = true,
-    this.isEnabled = true,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final contentColor = isEnabled ? null : AppColors.softGrey;
-
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: isEnabled ? onTap : null,
-        borderRadius: BorderRadius.circular(24),
-        child: Padding(
-          padding: const EdgeInsets.all(18),
-          child: Row(
-            children: [
-              _SettingsIcon(icon: icon, isEnabled: isEnabled),
-              const SizedBox(width: 14),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      title,
-                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                            color: contentColor,
-                          ),
-                    ),
-                    const SizedBox(height: 3),
-                    Text(
-                      subtitle,
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: AppColors.softGrey,
-                          ),
-                    ),
-                  ],
-                ),
-              ),
-              if (showChevron && isEnabled)
-                const Icon(
-                  Icons.chevron_right_rounded,
-                  color: AppColors.softGrey,
-                ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _SettingsSwitchTile extends StatelessWidget {
-  final IconData icon;
-  final String title;
-  final String subtitle;
-  final bool value;
-  final ValueChanged<bool> onChanged;
-
-  const _SettingsSwitchTile({
-    required this.icon,
-    required this.title,
-    required this.subtitle,
-    required this.value,
-    required this.onChanged,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.all(18),
-      child: Row(
-        children: [
-          _SettingsIcon(icon: icon),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(title, style: Theme.of(context).textTheme.titleMedium),
-                const SizedBox(height: 3),
-                Text(
-                  subtitle,
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: AppColors.softGrey,
-                      ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(width: 10),
-          Switch(
-            value: value,
-            activeColor: AppColors.terracotta,
-            onChanged: onChanged,
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _SettingsIcon extends StatelessWidget {
-  final IconData icon;
-  final bool isEnabled;
-
-  const _SettingsIcon({
-    required this.icon,
-    this.isEnabled = true,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: 42,
-      height: 42,
-      decoration: BoxDecoration(
-        color: AppColors.cream,
-        borderRadius: BorderRadius.circular(13),
-        border: Border.all(color: AppColors.border),
-      ),
-      child: Icon(
-        icon,
-        size: 21,
-        color: isEnabled ? AppColors.terracotta : AppColors.softGrey,
-      ),
-    );
-  }
-}
-
-class _LanguageOption extends StatelessWidget {
-  final String title;
-  final bool isSelected;
-  final VoidCallback onTap;
-
-  const _LanguageOption({
-    required this.title,
-    required this.isSelected,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      color: isSelected ? AppColors.cream : Colors.transparent,
-      borderRadius: BorderRadius.circular(18),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(18),
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 15),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(18),
-            border: Border.all(
-              color: isSelected ? AppColors.terracotta : AppColors.border,
-            ),
-          ),
-          child: Row(
-            children: [
-              Expanded(
-                child: Text(
-                  title,
-                  style: Theme.of(context).textTheme.titleMedium,
-                ),
-              ),
-              Icon(
-                isSelected
-                    ? Icons.radio_button_checked_rounded
-                    : Icons.radio_button_off_rounded,
-                color: isSelected
-                    ? AppColors.terracotta
-                    : AppColors.softGrey,
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
+      
