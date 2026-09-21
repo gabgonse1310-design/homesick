@@ -3,6 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
 import '../core/app_assets.dart';
+import '../l10n/app_language.dart';
 import '../models/person.dart';
 import '../services/firestore_service.dart';
 import '../theme/app_theme.dart';
@@ -12,6 +13,7 @@ import '../widgets/micro_animations.dart';
 import 'add_person_screen.dart';
 import 'inbox_screen.dart';
 import 'invitations_screen.dart';
+import 'family_hub_screen.dart';
 import 'person_screen.dart';
 import 'write_letter_screen.dart';
 
@@ -55,9 +57,7 @@ class _HomeScreenState extends State<HomeScreen> {
   Future<void> _openAddPersonScreen() async {
     final person = await Navigator.push<Person>(
       context,
-      MaterialPageRoute(
-        builder: (_) => const AddPersonScreen(),
-      ),
+      MaterialPageRoute(builder: (_) => const AddPersonScreen()),
     );
 
     if (person == null || !mounted) return;
@@ -109,9 +109,7 @@ class _HomeScreenState extends State<HomeScreen> {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (_) => WriteLetterScreen(
-          availablePeople: people,
-        ),
+        builder: (_) => WriteLetterScreen(availablePeople: people),
       ),
     );
   }
@@ -132,10 +130,7 @@ class _HomeScreenState extends State<HomeScreen> {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (_) => PersonScreen(
-          person: person,
-          availablePeople: people,
-        ),
+        builder: (_) => PersonScreen(person: person, availablePeople: people),
       ),
     );
   }
@@ -210,7 +205,8 @@ class _HomeScreenState extends State<HomeScreen> {
     return StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
       stream: _preparingProfile ? null : _service.watchPeople(),
       builder: (context, snapshot) {
-        final people = snapshot.data?.docs
+        final people =
+            snapshot.data?.docs
                 .map(_personFromDocument)
                 .where((person) => person.name.isNotEmpty)
                 .toList() ??
@@ -228,91 +224,89 @@ class _HomeScreenState extends State<HomeScreen> {
                     child: Row(
                       children: [
                         BreathingWidget(
-                        amplitude: 0.018,
-                        duration: const Duration(milliseconds: 2600),
-                        child: ClipRRect(
-                          borderRadius: BorderRadius.circular(18),
-                          child: Image.asset(
-                            AppAssets.homeIcon,
-                            width: 66,
-                            height: 66,
-                            fit: BoxFit.cover,
+                          amplitude: 0.018,
+                          duration: const Duration(milliseconds: 2600),
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(18),
+                            child: Image.asset(
+                              AppAssets.homeIcon,
+                              width: 66,
+                              height: 66,
+                              fit: BoxFit.cover,
+                            ),
                           ),
                         ),
-                      ),
-                      const SizedBox(width: 14),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              '$_greeting, $_greetingName',
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .headlineMedium,
-                            ),
-                            const SizedBox(height: 3),
-                            const Text('Home is only a letter away.'),
-                          ],
+                        const SizedBox(width: 14),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                '$_greeting, $_greetingName',
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .headlineMedium,
+                              ),
+                              const SizedBox(height: 3),
+                              const Text('Home is only a letter away.'),
+                            ],
+                          ),
                         ),
-                      ),
-                      IconButton(
-                        tooltip: 'Invitations',
-                        onPressed: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) => InvitationsScreen(),
-                            ),
-                          );
-                        },
-                        icon: const Icon(
-                          Icons.mark_email_unread_outlined,
-                          color: AppColors.terracotta,
+                        IconButton(
+                          tooltip: 'Invitations',
+                          onPressed: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => InvitationsScreen(),
+                              ),
+                            );
+                          },
+                          icon: const Icon(
+                            Icons.mark_email_unread_outlined,
+                            color: AppColors.terracotta,
+                          ),
                         ),
-                      ),
-                      IconButton(
-                        tooltip: 'Settings',
-                        onPressed: () {
-                          Navigator.pushNamed(context, '/settings');
-                        },
-                        icon: const Icon(
-                          Icons.settings_outlined,
-                          color: AppColors.terracotta,
+                        IconButton(
+                          tooltip: 'Settings',
+                          onPressed: () {
+                            Navigator.pushNamed(context, '/settings');
+                          },
+                          icon: const Icon(
+                            Icons.settings_outlined,
+                            color: AppColors.terracotta,
+                          ),
                         ),
-                      ),
-                    ],
+                      ],
                     ),
                   ),
                   const SizedBox(height: 28),
                   GentleReveal(
                     delay: const Duration(milliseconds: 130),
                     child: StreamBuilder<int>(
-                    stream: _service.watchUnreadIncomingLetterCount(),
-                    builder: (context, unreadSnapshot) {
-                      return _actionTile(
-                        title: 'Words for you',
-                        asset: AppAssets.letterIcon,
-                        badgeCount: unreadSnapshot.data ?? 0,
-                        onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) => InboxScreen(),
-                            ),
-                          );
-                        },
-                      );
-                    },
+                      stream: _service.watchUnreadIncomingLetterCount(),
+                      builder: (context, unreadSnapshot) {
+                        return _actionTile(
+                          title: 'Words for you',
+                          asset: AppAssets.letterIcon,
+                          badgeCount: unreadSnapshot.data ?? 0,
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(builder: (_) => InboxScreen()),
+                            );
+                          },
+                        );
+                      },
                     ),
                   ),
                   const SizedBox(height: 12),
                   GentleReveal(
                     delay: const Duration(milliseconds: 210),
                     child: _actionTile(
-                    title: 'Write a letter',
-                    asset: AppAssets.letterIcon,
-                    onTap: () => _openWriteLetterScreen(people),
+                      title: 'Write a letter',
+                      asset: AppAssets.letterIcon,
+                      onTap: () => _openWriteLetterScreen(people),
                     ),
                   ),
                   const SizedBox(height: 12),
@@ -328,9 +322,23 @@ class _HomeScreenState extends State<HomeScreen> {
                   GentleReveal(
                     delay: const Duration(milliseconds: 370),
                     child: _actionTile(
-                    title: 'Add someone',
-                    asset: AppAssets.personIcon,
-                    onTap: _openAddPersonScreen,
+                      title: 'Add someone',
+                      asset: AppAssets.personIcon,
+                      onTap: _openAddPersonScreen,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  GentleReveal(
+                    delay: const Duration(milliseconds: 430),
+                    child: _familyTile(
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => FamilyHubScreen(people: people),
+                          ),
+                        );
+                      },
                     ),
                   ),
                   const SizedBox(height: 28),
@@ -351,113 +359,102 @@ class _HomeScreenState extends State<HomeScreen> {
                   if (_preparingProfile)
                     _statusCard('Preparing your keepsake box...')
                   else if (_profileError != null)
-                    _statusCard(
-                      'We could not connect to your keepsake box.',
-                    )
+                    _statusCard('We could not connect to your keepsake box.')
                   else if (snapshot.hasError)
                     _statusCard(
                       'We could not load your people. Please try again.',
                     )
-                  else if (snapshot.connectionState ==
-                      ConnectionState.waiting)
+                  else if (snapshot.connectionState == ConnectionState.waiting)
                     _statusCard('Gathering your people...')
                   else if (people.isEmpty)
                     _statusCard(
                       'Add someone to begin keeping letters together.',
                     )
                   else
-                    ...people.asMap().entries.map(
-                      (entry) {
-                        final index = entry.key;
-                        final person = entry.value;
+                    ...people.asMap().entries.map((entry) {
+                      final index = entry.key;
+                      final person = entry.value;
 
-                        return GentleReveal(
-                          delay: Duration(
-                            milliseconds: 340 + (index.clamp(0, 8) * 55),
-                          ),
-                          child: Padding(
-                        padding: const EdgeInsets.only(bottom: 10),
-                        child: Material(
-                          color: AppColors.paper.withValues(alpha: 0.92),
-                          borderRadius: BorderRadius.circular(18),
-                          child: ListTile(
-                            onTap: () =>
-                                _openPersonScreen(person, people),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(18),
-                              side: const BorderSide(
-                                color: AppColors.border,
+                      return GentleReveal(
+                        delay: Duration(
+                          milliseconds: 340 + (index.clamp(0, 8) * 55),
+                        ),
+                        child: Padding(
+                          padding: const EdgeInsets.only(bottom: 10),
+                          child: Material(
+                            color: AppColors.paper.withValues(alpha: 0.92),
+                            borderRadius: BorderRadius.circular(18),
+                            child: ListTile(
+                              onTap: () => _openPersonScreen(person, people),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(18),
+                                side: const BorderSide(color: AppColors.border),
                               ),
-                            ),
-                            leading: BotanicalPersonIcon(
-                              symbol: person.symbol,
-                              size: 46,
-                              padding: const EdgeInsets.all(4),
-                            ),
-                            title: Text(person.name),
-                            subtitle: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                if (person.relationship.isNotEmpty)
-                                  Text(person.relationship),
-                                if (person.city.isNotEmpty ||
-                                    person.country.isNotEmpty)
-                                  Text(
-                                    [
-                                      person.city,
-                                      person.country,
-                                    ]
-                                        .where((value) => value.isNotEmpty)
-                                        .join(', '),
+                              leading: BotanicalPersonIcon(
+                                symbol: person.symbol,
+                                size: 46,
+                                padding: const EdgeInsets.all(4),
+                              ),
+                              title: Text(person.name),
+                              subtitle: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  if (person.relationship.isNotEmpty)
+                                    Text(person.relationship),
+                                  if (person.city.isNotEmpty ||
+                                      person.country.isNotEmpty)
+                                    Text(
+                                      [person.city, person.country]
+                                          .where((value) => value.isNotEmpty)
+                                          .join(', '),
+                                    ),
+                                  const SizedBox(height: 4),
+                                  Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Icon(
+                                        Icons.circle,
+                                        size: 8,
+                                        color: _statusColor(
+                                          person.connectionStatus,
+                                        ),
+                                      ),
+                                      const SizedBox(width: 6),
+                                      Text(
+                                        person.connectionLabel,
+                                        style: Theme.of(context)
+                                            .textTheme
+                                            .bodySmall
+                                            ?.copyWith(
+                                              color: _statusColor(
+                                                person.connectionStatus,
+                                              ),
+                                              fontWeight: FontWeight.w600,
+                                            ),
+                                      ),
+                                    ],
                                   ),
-                                const SizedBox(height: 4),
-                                Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Icon(
-                                      Icons.circle,
-                                      size: 8,
-                                      color: _statusColor(
-                                        person.connectionStatus,
+                                ],
+                              ),
+                              trailing: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  if (person.hasNewWords)
+                                    const Padding(
+                                      padding: EdgeInsets.only(right: 8),
+                                      child: PulsingDot(
+                                        size: 10,
+                                        color: AppColors.terracotta,
                                       ),
                                     ),
-                                    const SizedBox(width: 6),
-                                    Text(
-                                      person.connectionLabel,
-                                      style: Theme.of(context)
-                                          .textTheme
-                                          .bodySmall
-                                          ?.copyWith(
-                                            color: _statusColor(
-                                              person.connectionStatus,
-                                            ),
-                                            fontWeight: FontWeight.w600,
-                                          ),
-                                    ),
-                                  ],
-                                ),
-                              ],
-                            ),
-                            trailing: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                if (person.hasNewWords)
-                                  const Padding(
-                                    padding: EdgeInsets.only(right: 8),
-                                    child: PulsingDot(
-                                      size: 10,
-                                      color: AppColors.terracotta,
-                                    ),
-                                  ),
-                                const Icon(Icons.chevron_right_rounded),
-                              ],
+                                  const Icon(Icons.chevron_right_rounded),
+                                ],
+                              ),
                             ),
                           ),
                         ),
-                          ),
-                        );
-                      },
-                    ),
+                      );
+                    }),
                 ],
               ),
             ),
@@ -466,15 +463,11 @@ class _HomeScreenState extends State<HomeScreen> {
             amplitude: 0.012,
             duration: const Duration(milliseconds: 2200),
             child: FloatingActionButton.extended(
-            onPressed: () => _openWriteLetterScreen(people),
-            backgroundColor: AppColors.terracotta,
-            foregroundColor: Colors.white,
-            icon: Image.asset(
-              AppAssets.writeIcon,
-              width: 26,
-              height: 26,
-            ),
-            label: const Text('Write a letter'),
+              onPressed: () => _openWriteLetterScreen(people),
+              backgroundColor: AppColors.terracotta,
+              foregroundColor: Colors.white,
+              icon: Image.asset(AppAssets.writeIcon, width: 26, height: 26),
+              label: const Text('Write a letter'),
             ),
           ),
         );
@@ -495,22 +488,14 @@ class _HomeScreenState extends State<HomeScreen> {
         color: AppColors.paper.withValues(alpha: 0.94),
         borderRadius: BorderRadius.circular(20),
         child: Container(
-          padding: const EdgeInsets.symmetric(
-            horizontal: 17,
-            vertical: 14,
-          ),
+          padding: const EdgeInsets.symmetric(horizontal: 17, vertical: 14),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(20),
             border: Border.all(color: AppColors.border),
           ),
           child: Row(
             children: [
-              Image.asset(
-                asset,
-                width: 46,
-                height: 46,
-                fit: BoxFit.contain,
-              ),
+              Image.asset(asset, width: 46, height: 46, fit: BoxFit.contain),
               const SizedBox(width: 15),
               Expanded(
                 child: Text(
@@ -519,16 +504,58 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
               ),
               if (badgeCount > 0)
-                PulsingBadge(
-                  count: badgeCount,
-                  color: AppColors.terracotta,
-                ),
-              const Icon(
-                Icons.chevron_right_rounded,
-                color: AppColors.softInk,
-              ),
+                PulsingBadge(count: badgeCount, color: AppColors.terracotta),
+              const Icon(Icons.chevron_right_rounded, color: AppColors.softInk),
             ],
           ),
+        ),
+      ),
+    );
+  }
+
+  Widget _familyTile({required VoidCallback onTap}) {
+    return PressableScale(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(20),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 17, vertical: 16),
+        decoration: BoxDecoration(
+          color: AppColors.warmPaper.withValues(alpha: 0.96),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: AppColors.caramel),
+        ),
+        child: Row(
+          children: [
+            const CircleAvatar(
+              radius: 24,
+              backgroundColor: AppColors.paper,
+              child: Icon(
+                Icons.diversity_1_rounded,
+                color: AppColors.terracotta,
+                size: 28,
+              ),
+            ),
+            const SizedBox(width: 15),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    context.familyText('familyHub'),
+                    style: const TextStyle(
+                      fontFamily: 'serif',
+                      fontSize: 22,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.ink,
+                    ),
+                  ),
+                  const SizedBox(height: 3),
+                  Text(context.familyText('familySubtitle')),
+                ],
+              ),
+            ),
+            const Icon(Icons.chevron_right_rounded),
+          ],
         ),
       ),
     );
@@ -542,10 +569,7 @@ class _HomeScreenState extends State<HomeScreen> {
         borderRadius: BorderRadius.circular(20),
         border: Border.all(color: AppColors.border),
       ),
-      child: Text(
-        message,
-        textAlign: TextAlign.center,
-      ),
+      child: Text(message, textAlign: TextAlign.center),
     );
   }
 }

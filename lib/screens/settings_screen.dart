@@ -1,6 +1,8 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
+import '../l10n/app_language.dart';
+import '../services/firestore_service.dart';
 import '../theme/app_theme.dart';
 import 'profile_screen.dart';
 
@@ -14,7 +16,10 @@ class SettingsScreen extends StatefulWidget {
 class _SettingsScreenState extends State<SettingsScreen> {
   final FirebaseAuth _auth = FirebaseAuth.instance;
 
-  String _selectedLanguage = 'English';
+  String get _selectedLanguage =>
+      AppLanguageController.instance.locale.languageCode == 'es'
+      ? 'Español'
+      : 'English';
   bool _letterNotifications = true;
   bool _scheduledDeliveryNotifications = true;
   bool _isWorking = false;
@@ -45,18 +50,18 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 ),
                 const SizedBox(height: 22),
                 Text(
-                  'Choose a language',
+                  context.familyText('chooseLanguage'),
                   style: Theme.of(context).textTheme.headlineMedium,
                 ),
                 const SizedBox(height: 18),
                 _LanguageOption(
-                  title: 'English',
+                  title: context.familyText('english'),
                   isSelected: _selectedLanguage == 'English',
                   onTap: () => Navigator.pop(context, 'English'),
                 ),
                 const SizedBox(height: 10),
                 _LanguageOption(
-                  title: 'Español',
+                  title: context.familyText('spanish'),
                   isSelected: _selectedLanguage == 'Español',
                   onTap: () => Navigator.pop(context, 'Español'),
                 ),
@@ -69,10 +74,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
     if (selectedLanguage == null || !mounted) return;
 
-    setState(() => _selectedLanguage = selectedLanguage);
-    _showMessage(
-      '$selectedLanguage selected. Full app translation will be connected with localization.',
+    final code = selectedLanguage == 'Español' ? 'es' : 'en';
+    await AppLanguageController.instance.setLanguage(code);
+    await FirestoreService.instance.updateCurrentUserProfile(
+      preferredLanguage: code,
     );
+    if (mounted) setState(() {});
   }
 
   Future<void> _sendVerificationEmail() async {
@@ -92,11 +99,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
     try {
       await user.sendEmailVerification();
       if (mounted) {
-        _showMessage('Verification email sent to ${user.email ?? 'your email'}.');
+        _showMessage(
+          'Verification email sent to ${user.email ?? 'your email'}.',
+        );
       }
     } on FirebaseAuthException catch (error) {
       if (mounted) {
-        _showMessage(error.message ?? 'We could not send the verification email.');
+        _showMessage(
+          error.message ?? 'We could not send the verification email.',
+        );
       }
     } finally {
       if (mounted) setState(() => _isWorking = false);
@@ -114,13 +125,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: AppColors.paper,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(24),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
         title: const Text('Reset password?'),
-        content: Text(
-          'We will send password reset instructions to $email.',
-        ),
+        content: Text('We will send password reset instructions to $email.'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
@@ -211,11 +218,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     try {
       await _auth.signOut();
       if (!mounted) return;
-      Navigator.pushNamedAndRemoveUntil(
-        context,
-        '/login',
-        (route) => false,
-      );
+      Navigator.pushNamedAndRemoveUntil(context, '/login', (route) => false);
     } on FirebaseAuthException catch (error) {
       if (mounted) {
         setState(() => _isWorking = false);
@@ -230,10 +233,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   void _showMessage(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        behavior: SnackBarBehavior.floating,
-      ),
+      SnackBar(content: Text(message), behavior: SnackBarBehavior.floating),
     );
   }
 
@@ -293,9 +293,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 const SizedBox(height: 8),
                 Text(
                   'Manage your account, letters and preferences.',
-                  style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                        color: AppColors.softGrey,
-                      ),
+                  style: Theme.of(context).textTheme.bodyLarge
+                      ?.copyWith(color: AppColors.softGrey),
                 ),
                 const SizedBox(height: 28),
                 const _SettingsSectionTitle(title: 'Your account'),
@@ -334,7 +333,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       subtitle: isVerified
                           ? email
                           : 'Send a verification link to $email',
-                      onTap: isVerified ? _refreshAccount : _sendVerificationEmail,
+                      onTap: isVerified
+                          ? _refreshAccount
+                          : _sendVerificationEmail,
                     ),
                     const _SettingsDivider(),
                     _SettingsTile(
@@ -353,7 +354,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     const _SettingsDivider(),
                     _SettingsTile(
                       icon: Icons.language_rounded,
-                      title: 'Language',
+                      title: context.familyText('language'),
                       subtitle: _selectedLanguage,
                       onTap: _chooseLanguage,
                     ),
@@ -380,9 +381,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       subtitle: 'Remind me when a capsule becomes available',
                       value: _scheduledDeliveryNotifications,
                       onChanged: (value) {
-                        setState(
-                          () => _scheduledDeliveryNotifications = value,
-                        );
+                        setState(() => _scheduledDeliveryNotifications = value);
                       },
                     ),
                     const _SettingsDivider(),
@@ -467,16 +466,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       const SizedBox(height: 2),
                       Text(
                         'Home is only a letter away.',
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                              color: AppColors.softGrey,
-                            ),
+                        style: Theme.of(context).textTheme.bodySmall
+                            ?.copyWith(color: AppColors.softGrey),
                       ),
                       const SizedBox(height: 10),
                       Text(
                         'Version 1.0.0',
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                              color: AppColors.softGrey,
-                            ),
+                        style: Theme.of(context).textTheme.bodySmall
+                            ?.copyWith(color: AppColors.softGrey),
                       ),
                     ],
                   ),
@@ -539,9 +536,8 @@ class _AccountHeader extends StatelessWidget {
             backgroundColor: AppColors.cream,
             child: Text(
               name.isEmpty ? '?' : name[0].toUpperCase(),
-              style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                    color: AppColors.terracotta,
-                  ),
+              style: Theme.of(context).textTheme.headlineMedium
+                  ?.copyWith(color: AppColors.terracotta),
             ),
           ),
           const SizedBox(width: 15),
@@ -553,9 +549,8 @@ class _AccountHeader extends StatelessWidget {
                 const SizedBox(height: 3),
                 Text(
                   email,
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: AppColors.softGrey,
-                      ),
+                  style: Theme.of(context).textTheme.bodySmall
+                      ?.copyWith(color: AppColors.softGrey),
                 ),
                 const SizedBox(height: 7),
                 Row(
@@ -594,10 +589,8 @@ class _SettingsSectionTitle extends StatelessWidget {
   Widget build(BuildContext context) {
     return Text(
       title,
-      style: Theme.of(context).textTheme.titleMedium?.copyWith(
-            color: AppColors.softGrey,
-            fontWeight: FontWeight.w700,
-          ),
+      style: Theme.of(context).textTheme.titleMedium
+          ?.copyWith(color: AppColors.softGrey, fontWeight: FontWeight.w700),
     );
   }
 }
@@ -670,16 +663,14 @@ class _SettingsTile extends StatelessWidget {
                   children: [
                     Text(
                       title,
-                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                            color: contentColor,
-                          ),
+                      style: Theme.of(context).textTheme.titleMedium
+                          ?.copyWith(color: contentColor),
                     ),
                     const SizedBox(height: 3),
                     Text(
                       subtitle,
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: AppColors.softGrey,
-                          ),
+                      style: Theme.of(context).textTheme.bodySmall
+                          ?.copyWith(color: AppColors.softGrey),
                     ),
                   ],
                 ),
@@ -728,9 +719,8 @@ class _SettingsSwitchTile extends StatelessWidget {
                 const SizedBox(height: 3),
                 Text(
                   subtitle,
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: AppColors.softGrey,
-                      ),
+                  style: Theme.of(context).textTheme.bodySmall
+                      ?.copyWith(color: AppColors.softGrey),
                 ),
               ],
             ),
@@ -751,10 +741,7 @@ class _SettingsIcon extends StatelessWidget {
   final IconData icon;
   final bool isEnabled;
 
-  const _SettingsIcon({
-    required this.icon,
-    this.isEnabled = true,
-  });
+  const _SettingsIcon({required this.icon, this.isEnabled = true});
 
   @override
   Widget build(BuildContext context) {
@@ -814,9 +801,7 @@ class _LanguageOption extends StatelessWidget {
                 isSelected
                     ? Icons.radio_button_checked_rounded
                     : Icons.radio_button_off_rounded,
-                color: isSelected
-                    ? AppColors.terracotta
-                    : AppColors.softGrey,
+                color: isSelected ? AppColors.terracotta : AppColors.softGrey,
               ),
             ],
           ),
